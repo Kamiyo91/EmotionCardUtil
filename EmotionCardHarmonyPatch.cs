@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using UI;
+using UnityEngine;
 
 namespace EmotionCardUtil
 {
@@ -38,11 +40,33 @@ namespace EmotionCardUtil
 
         [HarmonyPatch(typeof(BattleEmotionCardModel), MethodType.Constructor, typeof(EmotionCardXmlInfo),
             typeof(BattleUnitModel))]
-        [HarmonyPostfix]
-        public static void BattleEmotionCardModel_ctor_Post(BattleEmotionCardModel __instance,
-            EmotionCardXmlInfo xmlInfo)
+        [HarmonyPrefix]
+        public static void BattleEmotionCardModel_ctor_Pre(BattleEmotionCardModel __instance,
+            EmotionCardXmlInfo xmlInfo,ref List<string> __state)
         {
+            __state = new List<string>();
+            var remove = new List<string>();
             using (var enumerator = xmlInfo.Script.GetEnumerator())
+            {
+                while (enumerator.MoveNext())
+                {
+                    var text = enumerator.Current;
+                    if (string.IsNullOrEmpty(text)) continue;
+                    if (!ModParameters.EmotionCardAbility.TryGetValue("EmotionCardAbility_" + text.Trim(),
+                            out _)) continue;
+                    __state.Add(text);
+                    remove.Add(text);
+                }
+            }
+            xmlInfo.Script.RemoveAll(x => remove.Contains(x));
+
+        }
+        [HarmonyPatch(typeof(BattleEmotionCardModel), MethodType.Constructor, typeof(EmotionCardXmlInfo),
+            typeof(BattleUnitModel))]
+        [HarmonyPostfix]
+        public static void BattleEmotionCardModel_ctor_Post(BattleEmotionCardModel __instance, EmotionCardXmlInfo xmlInfo, ref List<string> __state)
+        {
+            using (var enumerator = __state.GetEnumerator())
             {
                 while (enumerator.MoveNext())
                 {
@@ -52,11 +76,10 @@ namespace EmotionCardUtil
                             out var abilityType)) continue;
                     var ability = (EmotionCardAbilityBase)Activator.CreateInstance(abilityType);
                     ability.SetEmotionCard(__instance);
-                    __instance._abilityList.RemoveAll(x =>
-                        x.GetType().Name.Substring("EmotionCardAbility_".Length).Trim() == text);
                     __instance._abilityList.Add(ability);
                 }
             }
+            xmlInfo.Script.AddRange(__state);
         }
 
         [HarmonyPatch(typeof(UIEgoCardPreviewSlot), "Init")]
