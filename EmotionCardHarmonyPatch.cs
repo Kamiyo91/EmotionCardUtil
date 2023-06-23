@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using UI;
-using UnityEngine;
 
 namespace EmotionCardUtil
 {
@@ -42,7 +41,7 @@ namespace EmotionCardUtil
             typeof(BattleUnitModel))]
         [HarmonyPrefix]
         public static void BattleEmotionCardModel_ctor_Pre(BattleEmotionCardModel __instance,
-            EmotionCardXmlInfo xmlInfo,ref List<string> __state)
+            EmotionCardXmlInfo xmlInfo, ref List<string> __state)
         {
             __state = new List<string>();
             var remove = new List<string>();
@@ -58,13 +57,15 @@ namespace EmotionCardUtil
                     remove.Add(text);
                 }
             }
-            xmlInfo.Script.RemoveAll(x => remove.Contains(x));
 
+            xmlInfo.Script.RemoveAll(x => remove.Contains(x));
         }
+
         [HarmonyPatch(typeof(BattleEmotionCardModel), MethodType.Constructor, typeof(EmotionCardXmlInfo),
             typeof(BattleUnitModel))]
         [HarmonyPostfix]
-        public static void BattleEmotionCardModel_ctor_Post(BattleEmotionCardModel __instance, EmotionCardXmlInfo xmlInfo, ref List<string> __state)
+        public static void BattleEmotionCardModel_ctor_Post(BattleEmotionCardModel __instance,
+            EmotionCardXmlInfo xmlInfo, ref List<string> __state)
         {
             using (var enumerator = __state.GetEnumerator())
             {
@@ -79,6 +80,7 @@ namespace EmotionCardUtil
                     __instance._abilityList.Add(ability);
                 }
             }
+
             xmlInfo.Script.AddRange(__state);
         }
 
